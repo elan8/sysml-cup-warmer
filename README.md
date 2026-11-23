@@ -5,6 +5,10 @@ SPDX-License-Identifier: MIT
 
 # Cup warmer (SysML v2)
 
+![A cup warmer with a steaming mug on a desk (AI-generated concept illustration)](docs/assets/cup-warmer-concept.webp)
+
+*Concept illustration, generated with AI. It is not a photograph of a built product.*
+
 A small example that shows [Run42](https://github.com/elan8/run42-release) and
 [Doc42](https://github.com/elan8/doc42-release) working on one model. A heated plate keeps a cup warm. A controller,
 written as a SysML v2 state machine, warms the plate up, holds its temperature with a thermostat, and an independent
@@ -13,6 +17,9 @@ cutout switches the heater off if the thermostat's sensor fails.
 ```text
 model (SysML v2 + Modelica)  ->  run42 verify  ->  build/verdicts.json  ->  doc42 build  ->  verification report (PDF)
 ```
+
+**Read the report:** the [verification report (PDF)](https://elan8.github.io/sysml-cup-warmer/CW-VR-001.pdf) is rebuilt from the
+model and Run42's traces on every push to `main`.
 
 ## What is verified
 
@@ -52,4 +59,4 @@ results of a real appliance and do not show compliance with any standard.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
