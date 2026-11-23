@@ -47,6 +47,9 @@ jobs:
           ELAN8_TOKEN: ${{ secrets.ELAN8_TOKEN }}
         run: bash scripts/verify.sh
 
+      - name: Compute the figures of the report from the recorded traces
+        run: python3 scripts/report_data.py
+
       - name: Install Doc42
         uses: elan8/doc42-release@v0.8.2
         with:
@@ -68,5 +71,51 @@ jobs:
           path: |
             generated/*.pdf
             build/verdicts.json
+            build/results.md
+            build/figures/*.svg
           if-no-files-found: warn
           retention-days: 14
+
+      # With the repository variable PUBLISH_PAGES set to true (Settings, Pages, Source: GitHub Actions), a push to main
+      # publishes the report, with a small index page that records the commit and the tool versions.
+      - name: Write the index page
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_PAGES == 'true'
+        run: |
+          mkdir -p site
+          cp generated/CW-VR-001.pdf site/
+          cat > site/index.html <<HTML
+          <!doctype html>
+          <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Cup warmer: verification report</title></head>
+          <body style="font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5">
+          <h1>Cup warmer: verification report</h1>
+          <p>The report is built from the SysML v2 model by <a href="https://github.com/elan8/doc42-release">Doc42</a>, with the verdicts and traces of <a href="https://github.com/elan8/run42-release">Run42</a>.</p>
+          <p><a href="CW-VR-001.pdf">Read the report (PDF)</a> · <a href="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}">Explore the model</a></p>
+          <p style="color: #555; font-size: 0.9rem">Built from commit <a href="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}">${GITHUB_SHA:0:7}</a> with Run42 ${RUN42_VERSION} and Doc42 ${DOC42_VERSION}.</p>
+          </body></html>
+          HTML
+
+      - name: Upload the Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_PAGES == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  pages:
+    name: Publish the report
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_PAGES == 'true'
+    runs-on: ubuntu-22.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
