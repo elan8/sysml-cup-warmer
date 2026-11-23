@@ -10,6 +10,7 @@ committed: CI regenerates it from the traces on every run. Standard library only
 from __future__ import annotations
 
 import csv
+import json
 import math
 import re
 import sys
@@ -172,6 +173,22 @@ def main() -> int:
         vlines=[(tripped_at, "heater off", GREY)] if tripped_at is not None else [],
         notes=[f"Peak plate temperature {peak:.1f} degC"]))
 
+    # The rejected alternative: a 25 W heater, compared with the chosen 40 W one
+    lp = read_trace("low-power")
+    lt, lpp = lp["t"], celsius(lp["plate.temperature"])
+    lp_reach = first_time(lt, lpp, lambda v: v >= 62.0)
+    sysml = (REPO / "model" / "CupWarmer.sysml").read_text()
+    chosen_power = re.search(r"attribute heaterPower : \w+ default = ([0-9.]+) \[W\]", sysml).group(1)
+    alternative_power = re.search(r"part def LowPowerRig.*?heaterPower = ([0-9.]+) \[W\]", sysml, re.S).group(1)
+    (BUILD / "figures" / "design-comparison.svg").write_text(chart(
+        "Two heaters: plate temperature while warming up",
+        [(f"{chosen_power} W (chosen)", TEAL, wt, wp, False), (f"{alternative_power} W (alternative)", ORANGE, lt, lpp, False)],
+        (0, 300), (15, 80), "Temperature (degC)", hlines=[(62.0, "62 degC target", GREY)], vlines=[(300, "300 s limit", GREY)],
+        notes=[f"At 300 s: {wp[-1]:.1f} degC and {lpp[-1]:.1f} degC"]))
+    verdicts = {}
+    for name in ("verdicts", "alternative-verdicts"):
+        verdicts.update({r["case_name"]: r["verdict"] for r in json.loads((BUILD / f"{name}.json").read_text())})
+
     rows = parameters()
     parameter_lines = ["Table 2: The design parameters, read from the model.", "", "| Parameter | Value | Unit |", "| --- | ---: | --- |"]
     parameter_lines += [f"| {name} | {value} | {unit} |" for name, value, unit in rows] + [""]
@@ -188,7 +205,15 @@ def main() -> int:
         "",
     ]
     (BUILD / "results.md").write_text("\n".join(lines))
-    print("wrote build/parameters.md, build/results.md and three figures")
+    alternative = [
+        "Table 4: The chosen design and the rejected alternative, on the same requirement (the plate reaches 62 degC within 300 s).", "",
+        "| Design | Heater | Reaches 62 degC | Temperature at 300 s | Verdict |", "| --- | ---: | ---: | ---: | --- |",
+        f"| Chosen (CW-001) | {chosen_power} W | {reach:.0f} s | {wp[-1]:.1f} degC | {verdicts.get('CupWarmer::warmsUp', 'not run')} |",
+        f"| Alternative (CW-A1) | {alternative_power} W | {'%.0f s' % lp_reach if lp_reach is not None else 'not within 300 s'} | {lpp[-1]:.1f} degC | {verdicts.get('CupWarmer::Alternatives::warmsUpLowPower', 'not run')} |",
+        "",
+    ]
+    (BUILD / "alternative.md").write_text("\n".join(alternative))
+    print("wrote build/parameters.md, build/results.md, build/alternative.md and four figures")
     return 0
 
 
