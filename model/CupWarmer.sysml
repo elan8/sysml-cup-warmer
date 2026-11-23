@@ -45,6 +45,11 @@ package CupWarmer {
     part :>> probe : Probe { attribute :>> offset = -30 [K]; }
   }
 
+  // An alternative design: a cheaper heater of 25 W instead of 40 W.
+  part def LowPowerRig :> Rig {
+    part :>> plate : Plate { attribute :>> heaterPower = 25 [W]; }
+  }
+
   part def Controller {
     state logic {
       attribute heat : Real = 0;
@@ -116,6 +121,26 @@ package CupWarmer {
     assert constraint cutOutAndOff {
       controller.logic.latched == 1 and controller.logic.heat == 0
         and controller.logic.cutoutTemperature <= 363.15 [K]
+    }
+  }
+
+  // The design alternative that was evaluated and rejected. It is a package of its own so that the requirements
+  // of the chosen design stay separate from it in the report.
+  package Alternatives {
+    private import CupWarmer::*;
+    private import ISQ::*;
+    private import SI::*;
+
+    requirement <'CW-A1'> lowPowerWarmsUp {
+      doc /* The alternative with a 25 W heater: from 20 degC, the plate under a cup reaches 62 degC within 300 s. */
+    }
+
+    verification warmsUpLowPower {
+      @VerificationMethod { kind = VerificationMethodKind::test; }
+      subject controller : Controller;
+      objective { verify lowPowerWarmsUp; }
+      action stimulus { accept after 300 [s]; }
+      assert constraint reachedTemperature { controller.logic.temperature >= 335.15 [K] }
     }
   }
 }

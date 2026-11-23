@@ -71,6 +71,8 @@ jobs:
           path: |
             generated/*.pdf
             build/verdicts.json
+            build/alternative-verdicts.json
+            build/alternative.md
             build/results.md
             build/figures/*.svg
           if-no-files-found: warn

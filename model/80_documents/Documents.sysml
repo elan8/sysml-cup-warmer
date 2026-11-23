@@ -64,6 +64,21 @@ package CupWarmerDocuments {
       }
     }
 
+    view alternative {
+      @Section { title = "Design alternative"; }
+      doc /* A cheaper heater of 25 W was evaluated against the same warm-up requirement. It is shown here because it
+             fails: the comparison is the reason the chosen design has a 40 W heater. */
+      @Table {
+        columns = "ID = id, Requirement = text, Verified by = verified-by, Verdict = verified-by / verdict, Detail = verified-by / verdict-detail";
+        kind = "requirement";
+        verdicts = "../../build/alternative-verdicts.json";
+        caption = "The warm-up requirement of the alternative and the verdict of its case.";
+      }
+      expose CupWarmer::Alternatives::*;
+      @Prose { file = "../../build/alternative.md"; }
+      @Figure { file = "../../build/figures/design-comparison.svg"; caption = "The same warm-up with the chosen 40 W heater and the rejected 25 W heater."; }
+    }
+
     view method {
       @Section { title = "Method"; }
       doc /* The plate is a Modelica model: heater power, heat capacity of the plate and cup, and heat loss to the air.

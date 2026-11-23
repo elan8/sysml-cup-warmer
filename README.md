@@ -29,6 +29,10 @@ model and Run42's traces on every push to `main`.
 | CW-002 | After warming up, the plate holds the cup between 58 and 67 degC. | `holds` |
 | CW-003 | If the control sensor reads 30 K too low, an independent cutout switches the heater off and keeps it off before the plate exceeds 90 degC. | `sensorFault` |
 
+A fourth case checks a rejected alternative, a cheaper 25 W heater, against the same warm-up requirement. It must **fail**: the
+script, and with it CI, exits with an error if the alternative passes, because a check that can never fail proves nothing. The
+report shows both designs side by side.
+
 The controller has four states: `warming`, `heating` and `resting` (the thermostat band, 60 to 65 degC), and `tripped`, which
 latches the heater off. The plate is a Modelica model, [`Warmer.mo`](model/Warmer.mo): heater power, the heat capacity of
 plate and cup, and heat loss to the air. The values are assumptions, not measurements.
@@ -48,9 +52,10 @@ the [Doc42 documentation](https://elan8.github.io/doc42-release/) describes.
 
 ## See a verdict change
 
-Open [`CupWarmer.sysml`](model/CupWarmer.sysml) and change the heater power of the plate from `40 [W]` to `25 [W]`. Run the
-script again: `warmsUp` fails, because the plate then needs about 460 s to reach 62 degC. Put 40 W back and it passes. To see
-what the cutout is for, delete the three `transition cutout...` lines and run it again: `sensorFault` fails.
+The alternative design already shows it: in [`CupWarmer.sysml`](model/CupWarmer.sysml), `LowPowerRig` has a 25 W heater and its
+case fails, while the chosen 40 W design passes. Change the 40 W heater power of the plate to 25 W and the chosen design fails
+too, because the plate then needs about 460 s to reach 62 degC. To see what the cutout is for, delete the three
+`transition cutout...` lines and run the script again: `sensorFault` fails.
 
 ## Limits
 
