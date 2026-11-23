@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 Elan8
+# SPDX-License-Identifier: MIT
+name: Verify and report
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RUN42_VERSION: "0.1.0-beta.1"
+  DOC42_VERSION: "0.8.2"
+
+jobs:
+  verify:
+    name: Verify with Run42, report with Doc42
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Run42
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          package="run42-$RUN42_VERSION-linux-x64"
+          mkdir -p "$RUNNER_TEMP/run42"
+          gh release download "v$RUN42_VERSION" --repo elan8/run42-release \
+            --pattern "$package.tar.gz" --pattern SHA256SUMS.txt --dir "$RUNNER_TEMP/run42"
+          (cd "$RUNNER_TEMP/run42" && sha256sum --check --ignore-missing SHA256SUMS.txt && tar -xzf "$package.tar.gz")
+          echo "RUN42=$RUNNER_TEMP/run42/$package/run42" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/run42/$package/run42" --version
+
+      # Run42 needs an Elan8 API token; pull requests from forks cannot read the secret.
+      - name: Verify the requirements
+        env:
+          ELAN8_TOKEN: ${{ secrets.ELAN8_TOKEN }}
+        run: bash scripts/verify.sh
+
+      - name: Install Doc42
+        uses: elan8/doc42-release@v0.8.2
+        with:
+          version: ${{ env.DOC42_VERSION }}
+
+      - name: Check the documents
+        run: doc42 check model --workspace-root .
+
+      - name: Build the verification report
+        env:
+          ELAN8_TOKEN: ${{ secrets.ELAN8_TOKEN }}
+        run: doc42 build model --workspace-root . --doc CupWarmerDocuments::report --out generated
+
+      - name: Upload the report and the verdicts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-report
+          path: |
+            generated/*.pdf
+            build/verdicts.json
+          if-no-files-found: warn
+          retention-days: 14
