@@ -52,7 +52,7 @@ package CupWarmerDocuments {
 
       view warmingUp {
         @Section { title = "Warming up (CW-001)"; }
-        @Figure { file = "../../build/figures/warms-up.svg"; caption = "The plate warms up with the heater on. The dashed lines are the target and the time limit."; }
+        @Figure { file = "../../build/figures/warms-up.svg"; caption = "The plate warms up with the heater on until it reaches 62 degC, then the thermostat takes over. The dashed lines are the target and the time limit."; }
       }
       view holding {
         @Section { title = "Holding the temperature (CW-002)"; }
