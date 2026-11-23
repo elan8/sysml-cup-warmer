@@ -8,7 +8,8 @@ repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 run42="${RUN42:?set RUN42 to the run42 executable}"
 mkdir -p "${repo}/build"
 for case in warms-up holds-temperature sensor-fault; do
-  "${run42}" verify "${repo}/model" --driver "${repo}/verification/${case}.json" --out "${repo}/build/${case}.json" >/dev/null 2>&1 || true
+  rm -f "${repo}/build/${case}.json"   # never read the verdicts of an earlier run
+  "${run42}" verify "${repo}/model" --driver "${repo}/verification/${case}.json" --out "${repo}/build/${case}.json" >"${repo}/build/${case}.log" 2>&1 || true
 done
 python3 - "${repo}" <<'PY'
 import json, sys
@@ -17,7 +18,12 @@ repo = Path(sys.argv[1])
 chosen = []
 for case in ("warms-up", "holds-temperature", "sensor-fault"):
     driver = json.loads((repo / "verification" / f"{case}.json").read_text())
-    for record in json.loads((repo / "build" / f"{case}.json").read_text()):
+    path = repo / "build" / f"{case}.json"
+    if not path.exists():
+        print(f"run42 wrote no verdicts for {case}:", file=sys.stderr)
+        print((repo / "build" / f"{case}.log").read_text()[-2000:], file=sys.stderr)
+        sys.exit(2)
+    for record in json.loads(path.read_text()):
         if record["case_name"] == driver["case"]:
             chosen.append(record)
 (repo / "build" / "verdicts.json").write_text(json.dumps(chosen, indent=2) + "\n")
