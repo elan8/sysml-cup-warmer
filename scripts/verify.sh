@@ -8,6 +8,7 @@ repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 run42="${RUN42:?set RUN42 to the run42 executable}"
 mkdir -p "${repo}/build"
 for case in warms-up holds-temperature sensor-fault; do
+  rm -f "${repo}/build/${case}.json"   # never read the verdicts of an earlier run
   "${run42}" verify "${repo}/model" --driver "${repo}/verification/${case}.json" --out "${repo}/build/${case}.json" >"${repo}/build/${case}.log" 2>&1 || true
 done
 python3 - "${repo}" <<'PY'
