@@ -65,7 +65,10 @@ package CupWarmer {
         entry action heatOff { assign heat := 0; }
         do action sense { while true { accept after 1 [s]; } }
       }
-      state tripped { entry action latchOff { assign heat := 0; assign latched := 1; } }
+      state tripped {
+        entry action latchOff { assign heat := 0; assign latched := 1; }
+        do action sense { while true { accept after 1 [s]; } }
+      }
       // Thermostat: warm up to 62 C, then hold between 60 and 65 C.
       transition reached first warming accept when temperature >= 335.15 [K] then resting;
       transition cooled first resting accept when temperature <= 333.15 [K] then heating;

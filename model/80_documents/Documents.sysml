@@ -22,8 +22,9 @@ package CupWarmerDocuments {
 
     view purpose {
       @Section { title = "Purpose"; }
-      doc /* This report shows what was verified about the cup warmer design and what the simulation found. Every row
-             comes from the SysML v2 model, and every verdict from a Run42 run of the case that verifies the requirement. */
+      doc /* This report shows what was verified about the cup warmer design and what the simulation found. Every
+             requirement comes from the SysML v2 model, and every verdict and number from a Run42 run of the case that
+             verifies it. The report is rebuilt on every change. */
     }
 
     view results {
@@ -37,12 +38,39 @@ package CupWarmerDocuments {
       expose CupWarmer::*;
     }
 
+    view design {
+      @Section { title = "Design parameters"; }
+      @Prose { file = "../../build/parameters.md"; }
+    }
+
+    view measurements {
+      @Section { title = "Results"; }
+      doc /* The traces below are what Run42 recorded when it ran the cases: the temperature of the plate once per second.
+             The key figures are measured on them, so the report shows how much margin each requirement has, not only
+             whether it holds. */
+      @Prose { file = "../../build/results.md"; }
+
+      view warmingUp {
+        @Section { title = "Warming up (CW-001)"; }
+        @Figure { file = "../../build/figures/warms-up.svg"; caption = "The plate warms up with the heater on until it reaches 62 degC, then the thermostat takes over. The dashed lines are the target and the time limit."; }
+      }
+      view holding {
+        @Section { title = "Holding the temperature (CW-002)"; }
+        @Figure { file = "../../build/figures/holds-temperature.svg"; caption = "The thermostat switches the heater between 60 and 65 degC. The shaded band is the requirement."; }
+      }
+      view sensorFault {
+        @Section { title = "Sensor fault (CW-003)"; }
+        @Figure { file = "../../build/figures/sensor-fault.svg"; caption = "The control sensor reads 30 K too low, so the thermostat keeps heating. The independent cutout switches the heater off at 85 degC."; }
+      }
+    }
+
     view method {
       @Section { title = "Method"; }
       doc /* The plate is a Modelica model: heater power, heat capacity of the plate and cup, and heat loss to the air.
              The controller is a SysML v2 state machine that senses the temperature once a second. A case runs the
              controller against the plate and checks an assertion at the end of its stimulus. The sensor-fault case
-             uses a plate whose control sensor reads 30 K too low. */
+             uses a plate whose control sensor reads 30 K too low. The figures are computed from the recorded traces by
+             `scripts/report_data.py`. */
     }
 
     view limits {
